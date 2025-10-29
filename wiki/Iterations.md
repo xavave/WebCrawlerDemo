@@ -110,11 +110,11 @@ Profondeur 2: nullepart@mozilla.org, ailleurs@mozilla.org, loin@mozilla.org
 
 ---
 
-## 🚧 Itération 2 : Gestion du HTML Réel
+## ✅ Itération 2 : Gestion du HTML Réel
 
 **Date** : 29 octobre 2025  
-**Commit** : (en cours)  
-**Statut** : 🚧 En cours
+**Commit** : `e18d968` / `815ba01` - "Iteration 2: HTML réel avec HtmlAgilityPack + Wiki documentation"  
+**Statut** : ✅ Complété
 
 ### 🎯 Objectifs
 
@@ -125,12 +125,12 @@ Profondeur 2: nullepart@mozilla.org, ailleurs@mozilla.org, loin@mozilla.org
 
 ### 📋 Tâches
 
-- [ ] Ajouter le package NuGet HtmlAgilityPack
-- [ ] Refactorer `ExtractEmailsFromHtml()` pour utiliser HtmlAgilityPack
-- [ ] Refactorer `ExtractChildUrls()` pour utiliser HtmlAgilityPack
-- [ ] Tester avec du HTML réel malformé
-- [ ] Mettre à jour la documentation
-- [ ] Créer des tests pour HTML malformé
+- [x] Ajouter le package NuGet HtmlAgilityPack
+- [x] Refactorer `ExtractEmailsFromHtml()` pour utiliser HtmlAgilityPack
+- [x] Refactorer `ExtractChildUrls()` pour utiliser HtmlAgilityPack
+- [x] Tester avec du HTML réel malformé
+- [x] Mettre à jour la documentation
+- [x] Créer des tests pour HTML malformé
 
 ### 🔧 Changements Techniques Prévus
 
@@ -159,6 +159,55 @@ var mailtoLinks = doc.DocumentNode.SelectNodes("//a[@href]");
 - ✅ Peut parser du HTML avec des balises non fermées
 - ✅ Peut parser du HTML avec des attributs sans guillemets
 - ✅ Performance similaire ou meilleure
+
+### 🎯 Résultats Obtenus
+
+**Changements implémentés** :
+
+1. **Migration vers HtmlAgilityPack** :
+```csharp
+// Avant (XDocument)
+var doc = XDocument.Parse($"<root>{html}</root>");
+
+// Après (HtmlAgilityPack)
+var htmlDoc = new HtmlDocument();
+htmlDoc.LoadHtml(html);
+```
+
+2. **Parsing robuste avec XPath** :
+```csharp
+var linkNodes = doc.DocumentNode.SelectNodes("//a[@href]");
+```
+
+3. **Test avec HTML malformé** :
+- Balises non fermées : `<h1>HTML MALFORMÉ` ✅
+- Attributs sans guillemets : `href=mailto:test@test.org` ✅
+- Guillemets simples : `href='./link.html'` ✅
+
+**Tests validés** :
+```
+Profondeur 0: nullepart@mozilla.org ✅
+Profondeur 1: nullepart@mozilla.org, ailleurs@mozilla.org ✅
+Profondeur 2: nullepart@mozilla.org, ailleurs@mozilla.org, loin@mozilla.org ✅
+HTML Malformé: test@malformed.org, another@test.com ✅
+```
+
+### 📚 Documentation Créée
+
+- **Wiki complet** avec 3 pages :
+  - `Home.md` - Page d'accueil du wiki
+  - `Iterations.md` - Documentation détaillée des itérations
+  - `IA-Accelerateur-Developpeurs-Seniors.md` - Réflexion sur l'utilisation de l'IA
+
+### 🎓 Leçons Apprises
+
+1. **HtmlAgilityPack vs XDocument** : HtmlAgilityPack est beaucoup plus tolérant et adapté au HTML réel
+2. **XPath** : Expressions XPath plus simples et lisibles que LINQ to XML
+3. **Robustesse** : Peut maintenant gérer du HTML de sources variées (web scraping réel)
+
+### 📦 Dépendances Ajoutées
+
+- `HtmlAgilityPack` v1.12.4
 
 ---
 
@@ -236,7 +285,7 @@ var mailtoLinks = doc.DocumentNode.SelectNodes("//a[@href]");
 | Itération | Fonctionnalité | Statut | Commit |
 |-----------|---------------|--------|--------|
 | 1 | Algorithme BFS de base | ✅ | 893543b |
-| 2 | HTML réel | 🚧 | - |
+| 2 | HTML réel | ✅ | e18d968 / 815ba01 |
 | 3 | URLs absolues | 📋 | - |
 | 4 | Rate limiting | 📋 | - |
 | 5 | robots.txt | 📋 | - |
