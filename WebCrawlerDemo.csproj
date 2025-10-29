@@ -11,4 +11,10 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="WebCrawlerDemo.Tests\**" />
+    <EmbeddedResource Remove="WebCrawlerDemo.Tests\**" />
+    <None Remove="WebCrawlerDemo.Tests\**" />
+  </ItemGroup>
+
 </Project>

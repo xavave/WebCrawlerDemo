@@ -385,7 +385,32 @@ namespace WebCrawlerDemo
             {
                 if (Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
                 {
-                    return uri.Host.ToLowerInvariant();
+                    // Pour les URL HTTP/HTTPS, utiliser le host
+                    if (uri.Scheme == "http" || uri.Scheme == "https")
+                    {
+                        return uri.Host.ToLowerInvariant();
+                    }
+                    
+                    // Pour les fichiers locaux (file://), utiliser le r�pertoire racine
+                    if (uri.Scheme == "file" && !string.IsNullOrEmpty(uri.LocalPath))
+                    {
+                        // Extraire le r�pertoire racine (ex: C:/TestHtml/ -> c:/testhtml)
+                        var directory = Path.GetDirectoryName(uri.LocalPath);
+                        if (!string.IsNullOrEmpty(directory))
+                        {
+                            return directory.Replace("\\", "/").ToLowerInvariant();
+                        }
+                    }
+                }
+                
+                // Fallback pour les chemins locaux sans scheme (ex: C:/TestHtml/index.html)
+                if (Path.IsPathRooted(url))
+                {
+                    var directory = Path.GetDirectoryName(url);
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        return directory.Replace("\\", "/").ToLowerInvariant();
+                    }
                 }
             }
             catch

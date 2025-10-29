@@ -7,7 +7,7 @@ namespace WebCrawlerDemo
 {
     /// <summary>
     /// Parser pour les fichiers robots.txt selon la RFC
-    /// Itération 5: Support de robots.txt
+    /// Itï¿½ration 5: Support de robots.txt
     /// </summary>
     public class RobotsTxtParser
     {
@@ -41,6 +41,11 @@ namespace WebCrawlerDemo
                 if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("#"))
                     continue;
 
+                // Supprimer les commentaires inline (aprï¿½s #)
+                var commentIndex = trimmedLine.IndexOf('#');
+                if (commentIndex > 0)
+                    trimmedLine = trimmedLine.Substring(0, commentIndex).Trim();
+
                 // Parser les directives
                 var parts = trimmedLine.Split(new[] { ':' }, 2);
                 if (parts.Length != 2)
@@ -52,7 +57,7 @@ namespace WebCrawlerDemo
                 switch (directive)
                 {
                     case "user-agent":
-                        // Sauvegarder les règles précédentes
+                        // Sauvegarder les rï¿½gles prï¿½cï¿½dentes
                         if (currentRules.Count > 0)
                         {
                             if (!_rules.ContainsKey(currentUserAgent))
@@ -85,7 +90,7 @@ namespace WebCrawlerDemo
                 }
             }
 
-            // Sauvegarder les dernières règles
+            // Sauvegarder les derniï¿½res rï¿½gles
             if (currentRules.Count > 0)
             {
                 if (!_rules.ContainsKey(currentUserAgent))
@@ -95,7 +100,7 @@ namespace WebCrawlerDemo
         }
 
         /// <summary>
-        /// Vérifie si une URL peut être crawlée selon les règles robots.txt
+        /// Vï¿½rifie si une URL peut ï¿½tre crawlï¿½e selon les rï¿½gles robots.txt
         /// </summary>
         public bool IsAllowed(string url, string userAgent = "*")
         {
@@ -107,14 +112,14 @@ namespace WebCrawlerDemo
                 var uri = new Uri(url);
                 var path = uri.PathAndQuery;
 
-                // Récupérer les règles applicables
+                // Rï¿½cupï¿½rer les rï¿½gles applicables
                 var applicableRules = GetApplicableRules(userAgent);
 
-                // Si aucune règle, tout est autorisé
+                // Si aucune rï¿½gle, tout est autorisï¿½
                 if (applicableRules.Count == 0)
                     return true;
 
-                // Trouver la règle la plus spécifique qui correspond
+                // Trouver la rï¿½gle la plus spï¿½cifique qui correspond
                 RobotRule? matchingRule = null;
                 int maxMatchLength = 0;
 
@@ -122,7 +127,7 @@ namespace WebCrawlerDemo
                 {
                     if (PathMatches(path, rule.Path))
                     {
-                        // La règle la plus longue (la plus spécifique) gagne
+                        // La rï¿½gle la plus longue (la plus spï¿½cifique) gagne
                         if (rule.Path.Length > maxMatchLength)
                         {
                             maxMatchLength = rule.Path.Length;
@@ -131,22 +136,22 @@ namespace WebCrawlerDemo
                     }
                 }
 
-                // Si aucune règle ne correspond, c est autorisé
+                // Si aucune rï¿½gle ne correspond, c est autorisï¿½
                 if (matchingRule == null)
                     return true;
 
-                // Appliquer la règle trouvée
+                // Appliquer la rï¿½gle trouvï¿½e
                 return matchingRule.Type == RuleType.Allow;
             }
             catch
             {
-                // En cas d erreur, autoriser par défaut
+                // En cas d erreur, autoriser par dï¿½faut
                 return true;
             }
         }
 
         /// <summary>
-        /// Récupère le délai de crawl en millisecondes (si spécifié)
+        /// Rï¿½cupï¿½re le dï¿½lai de crawl en millisecondes (si spï¿½cifiï¿½)
         /// </summary>
         public int? GetCrawlDelay()
         {
@@ -154,7 +159,7 @@ namespace WebCrawlerDemo
         }
 
         /// <summary>
-        /// Récupère la liste des sitemaps
+        /// Rï¿½cupï¿½re la liste des sitemaps
         /// </summary>
         public List<string> GetSitemaps()
         {
@@ -163,19 +168,25 @@ namespace WebCrawlerDemo
 
         private List<RobotRule> GetApplicableRules(string userAgent)
         {
-            var rules = new List<RobotRule>();
             var normalizedAgent = userAgent.ToLowerInvariant();
 
-            // Chercher les règles spécifiques au user-agent
+            // Chercher d'abord les rï¿½gles spï¿½cifiques au user-agent
             foreach (var kvp in _rules)
             {
-                if (kvp.Key == "*" || normalizedAgent.Contains(kvp.Key))
+                if (kvp.Key != "*" && normalizedAgent.Contains(kvp.Key))
                 {
-                    rules.AddRange(kvp.Value);
+                    // Si des rï¿½gles spï¿½cifiques existent, les utiliser en prioritï¿½
+                    return kvp.Value;
                 }
             }
 
-            return rules;
+            // Sinon, utiliser les rï¿½gles wildcard (*)
+            if (_rules.ContainsKey("*"))
+            {
+                return _rules["*"];
+            }
+
+            return new List<RobotRule>();
         }
 
         private bool PathMatches(string path, string pattern)
@@ -183,12 +194,12 @@ namespace WebCrawlerDemo
             if (string.IsNullOrEmpty(pattern))
                 return true;
 
-            // Pattern vide = tout est autorisé
+            // Pattern vide = tout est autorisï¿½
             if (pattern == "/")
                 return true;
 
             // Convertir le pattern robots.txt en regex
-            // * = n importe quel caractère
+            // * = n importe quel caractï¿½re
             // $ = fin de l URL
             var regexPattern = "^" + Regex.Escape(pattern)
                 .Replace("\\*", ".*")
