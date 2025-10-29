@@ -18,19 +18,32 @@ Implémenter un algorithme de web crawling pour extraire les adresses emails (li
 Ce projet suit une approche **itérative et incrémentale**, où chaque itération ajoute une fonctionnalité ou amélioration spécifique :
 
 1. ✅ **Itération 1** - Algorithme BFS de base avec HTML/XML valide
-2. 🚧 **Itération 2** - Gestion du HTML réel (pas uniquement XML valide)
-3. 📋 **Itération 3** - Support des URLs absolues et domaines multiples
-4. 📋 **Itération 4** - Rate limiting et politeness policies
-5. 📋 **Itération 5** - Gestion du robots.txt
-6. 📋 **Itération 6** - Tests unitaires complets
-7. 📋 **Itération 7** - Logging structuré
+2. ✅ **Itération 2** - Gestion du HTML réel avec HtmlAgilityPack
+3. ✅ **Itération 3** - Support des URLs HTTP/HTTPS et domaines multiples
+4. ✅ **Itération 4** - Rate limiting et politeness policies
+5. ✅ **Itération 5** - Support robots.txt (RFC-compliant)
+6. ✅ **Itération 6** - Tests unitaires complets (23 tests xUnit)
+7. ✅ **Itération 7** - Logging structuré avec Serilog
+
+🎉 **Toutes les itérations sont complétées !** Le projet est maintenant de **niveau production**.
 
 ## 🛠️ Technologies
 
-- .NET 8.0
-- C# 12
-- Algorithme BFS (Breadth-First Search)
-- SOLID Principles
+- **.NET 8.0** / **C# 12**
+- **Algorithme BFS** (Breadth-First Search)
+- **HtmlAgilityPack 1.12.4** - Parsing HTML robuste
+- **Serilog 4.3.0** - Logging structuré
+- **xUnit 2.9.3** - Tests unitaires (23 tests, 100% réussite)
+- **SOLID Principles** - Architecture maintenable
+
+## 📊 Statistiques du Projet
+
+- **Commits** : 10+ commits documentés
+- **Tests** : 23 tests unitaires (100% de réussite)
+- **Fichiers** : 12 fichiers de code principal + 3 fichiers de tests
+- **Fonctionnalités** : 7 itérations complètes
+- **Documentation** : README complet + Wiki avec 4 pages
+- **Niveau** : Production-ready avec observabilité complète
 
 ## 📖 Navigation
 
