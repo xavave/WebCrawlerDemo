@@ -228,3 +228,16 @@ Développé comme démonstration d'algorithme de web crawling avec contrôle de 
 - Gestion du robots.txt
 - Tests unitaires complets
 - Logging structuré
+
+Test : dotnet run
+sortie:
+=== Test du Web Crawler d'Emails ===
+
+Profondeur 0:
+Résultat: nullepart@mozilla.org
+
+Profondeur 1:
+Résultat: nullepart@mozilla.org, ailleurs@mozilla.org
+
+Profondeur 2:
+Résultat: nullepart@mozilla.org, ailleurs@mozilla.org, loin@mozilla.org
