@@ -15,9 +15,16 @@ var emails1 = webCrawler.GetEmailsInPageAndChildPages(browser, "C:/TestHtml/inde
 Console.WriteLine($"Résultat: {string.Join(", ", emails1)}\n");
 
 // Test avec profondeur 2
-Console.WriteLine("Profondeur 2:");
+Console.WriteLine("Test avec profondeur 2:");
 var emails2 = webCrawler.GetEmailsInPageAndChildPages(browser, "C:/TestHtml/index.html", 2);
 Console.WriteLine($"Résultat: {string.Join(", ", emails2)}\n");
+
+// Test avec HTML malformé (Itération 2 - HtmlAgilityPack)
+Console.WriteLine("=== Test HTML Malformé (Itération 2) ===\n");
+Console.WriteLine("Test avec HTML malformé:");
+var emailsMalformed = webCrawler.GetEmailsInPageAndChildPages(browser, "C:/TestHtml/malformed.html", 0);
+Console.WriteLine($"Résultat: {string.Join(", ", emailsMalformed)}");
+Console.WriteLine("✅ HtmlAgilityPack peut parser du HTML malformé !\n");
 
 Console.WriteLine("Appuyez sur une touche pour continuer...");
 Console.ReadKey();

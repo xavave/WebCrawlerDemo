@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using HtmlAgilityPack;
 
 namespace WebCrawlerDemo
 {
     /// <summary>
     /// Implémentation du web crawler d'emails utilisant l'algorithme BFS (Breadth-First Search)
-    /// pour respecter la contrainte de priorité aux pages "les plus proches"
+    /// pour respecter la contrainte de priorité aux pages "les plus proches".
+    /// Version 2: Utilise HtmlAgilityPack pour parser du HTML réel (pas uniquement XML valide)
     /// </summary>
     public class EmailWebCrawler : ITheTest
     {
@@ -51,11 +52,12 @@ namespace WebCrawlerDemo
                     if (string.IsNullOrEmpty(html))
                         continue;
 
-                    // Parser le HTML comme XML pour extraire les liens
-                    var doc = XDocument.Parse($"<root>{html}</root>");
+                    // Parser le HTML réel avec HtmlAgilityPack (supporte HTML malformé)
+                    var htmlDoc = new HtmlDocument();
+                    htmlDoc.LoadHtml(html);
 
                     // Extraire tous les emails de la page actuelle
-                    var emailsInPage = ExtractEmailsFromHtml(doc);
+                    var emailsInPage = ExtractEmailsFromHtml(htmlDoc);
                     foreach (var email in emailsInPage)
                     {
                         distinctEmails.Add(email);
@@ -64,7 +66,7 @@ namespace WebCrawlerDemo
                     // Si on n'a pas atteint la profondeur maximale, ajouter les liens enfants
                     if (maximumDepth == -1 || currentDepth < maximumDepth)
                     {
-                        var childUrls = ExtractChildUrls(doc, currentUrl);
+                        var childUrls = ExtractChildUrls(htmlDoc, currentUrl);
                         foreach (var childUrl in childUrls)
                         {
                             string normalizedChildUrl = NormalizeUrl(childUrl);
@@ -86,20 +88,31 @@ namespace WebCrawlerDemo
         }
 
         /// <summary>
-        /// Extrait tous les emails des liens mailto dans le document XML
+        /// Extrait tous les emails des liens mailto dans le document HTML
+        /// Utilise HtmlAgilityPack pour supporter le HTML réel (malformé)
         /// </summary>
-        private HashSet<string> ExtractEmailsFromHtml(XDocument doc)
+        private HashSet<string> ExtractEmailsFromHtml(HtmlDocument doc)
         {
             var emails = new HashSet<string>();
 
             // Rechercher tous les éléments <a> avec un attribut href contenant "mailto:"
-            var mailtoLinks = doc.Descendants("a")
-                .Where(a => a.Attribute("href") != null && 
-                           a.Attribute("href").Value.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase));
+            // XPath: sélectionne tous les liens <a> qui ont un attribut href
+            var linkNodes = doc.DocumentNode.SelectNodes("//a[@href]");
+            
+            if (linkNodes == null)
+                return emails;
 
-            foreach (var link in mailtoLinks)
+            foreach (var link in linkNodes)
             {
-                string href = link.Attribute("href").Value;
+                string? href = link.GetAttributeValue("href", null);
+                
+                if (string.IsNullOrEmpty(href))
+                    continue;
+
+                // Vérifier si c'est un lien mailto
+                if (!href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 // Extraire l'email de "mailto:email@domain.com"
                 string email = href.Substring(7); // Enlever "mailto:"
                 
@@ -121,21 +134,32 @@ namespace WebCrawlerDemo
 
         /// <summary>
         /// Extrait toutes les URLs enfants de la page (liens href qui ne sont pas des mailto)
+        /// Utilise HtmlAgilityPack pour supporter le HTML réel (malformé)
         /// </summary>
-        private HashSet<string> ExtractChildUrls(XDocument doc, string baseUrl)
+        private HashSet<string> ExtractChildUrls(HtmlDocument doc, string baseUrl)
         {
             var childUrls = new HashSet<string>();
 
-            // Rechercher tous les éléments <a> avec un attribut href qui ne sont pas des mailto
-            var links = doc.Descendants("a")
-                .Where(a => a.Attribute("href") != null && 
-                           !a.Attribute("href").Value.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) &&
-                           !a.Attribute("href").Value.StartsWith("http", StringComparison.OrdinalIgnoreCase));
+            // Rechercher tous les éléments <a> avec un attribut href
+            var linkNodes = doc.DocumentNode.SelectNodes("//a[@href]");
+            
+            if (linkNodes == null)
+                return childUrls;
 
-            foreach (var link in links)
+            foreach (var link in linkNodes)
             {
-                string href = link.Attribute("href").Value;
-                string absoluteUrl = ResolveRelativeUrl(baseUrl, href);
+                string? href = link.GetAttributeValue("href", null);
+                
+                if (string.IsNullOrEmpty(href))
+                    continue;
+
+                // Ignorer les liens mailto et les liens HTTP/HTTPS (pour l'instant)
+                if (href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) ||
+                    href.StartsWith("http:", StringComparison.OrdinalIgnoreCase) ||
+                    href.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string? absoluteUrl = ResolveRelativeUrl(baseUrl, href);
                 if (!string.IsNullOrEmpty(absoluteUrl))
                 {
                     childUrls.Add(absoluteUrl);
@@ -148,7 +172,7 @@ namespace WebCrawlerDemo
         /// <summary>
         /// Résout une URL relative par rapport à une URL de base
         /// </summary>
-        private string ResolveRelativeUrl(string baseUrl, string relativeUrl)
+        private string? ResolveRelativeUrl(string baseUrl, string relativeUrl)
         {
             try
             {
