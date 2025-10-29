@@ -13,11 +13,13 @@ namespace WebCrawlerDemo
     /// Version 2: Utilise HtmlAgilityPack pour parser du HTML réel (pas uniquement XML valide)
     /// Version 3: Support des URLs HTTP/HTTPS absolues et domaines multiples
     /// Version 4: Rate limiting et politiques de politesse
+    /// Version 5: Support de robots.txt
     /// </summary>
     public class EmailWebCrawler : ITheTest
     {
         private readonly CrawlerPolicies _policies;
         private readonly Dictionary<string, int> _pagesPerDomain;
+        private RobotsTxtCache? _robotsCache;
 
         public EmailWebCrawler() : this(CrawlerPolicies.Default)
         {
@@ -41,6 +43,12 @@ namespace WebCrawlerDemo
             var visitedUrls = new HashSet<string>();
             var urlsToVisit = new Queue<(string Url, int Depth)>();
 
+            // Initialiser le cache robots.txt si la politique le demande
+            if (_policies.RespectRobotsTxt)
+            {
+                _robotsCache = new RobotsTxtCache(browser);
+            }
+
             // Normaliser l'URL de départ
             string normalizedStartUrl = NormalizeUrl(url);
             urlsToVisit.Enqueue((normalizedStartUrl, 0));
@@ -63,6 +71,16 @@ namespace WebCrawlerDemo
                 {
                     Console.WriteLine($"Limite de pages atteinte pour le domaine de {currentUrl}");
                     continue;
+                }
+
+                // Vérifier robots.txt si activé
+                if (_policies.RespectRobotsTxt && _robotsCache != null)
+                {
+                    if (!_robotsCache.IsAllowed(currentUrl, _policies.UserAgent))
+                    {
+                        Console.WriteLine($"URL bloquée par robots.txt: {currentUrl}");
+                        continue;
+                    }
                 }
 
                 visitedUrls.Add(currentUrl);
