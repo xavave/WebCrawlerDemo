@@ -12,9 +12,23 @@ namespace WebCrawlerDemo
     /// pour respecter la contrainte de priorité aux pages "les plus proches".
     /// Version 2: Utilise HtmlAgilityPack pour parser du HTML réel (pas uniquement XML valide)
     /// Version 3: Support des URLs HTTP/HTTPS absolues et domaines multiples
+    /// Version 4: Rate limiting et politiques de politesse
     /// </summary>
     public class EmailWebCrawler : ITheTest
     {
+        private readonly CrawlerPolicies _policies;
+        private readonly Dictionary<string, int> _pagesPerDomain;
+
+        public EmailWebCrawler() : this(CrawlerPolicies.Default)
+        {
+        }
+
+        public EmailWebCrawler(CrawlerPolicies policies)
+        {
+            _policies = policies ?? CrawlerPolicies.Default;
+            _pagesPerDomain = new Dictionary<string, int>();
+        }
+
         public List<string> GetEmailsInPageAndChildPages(IWebBrowser browser, string url, int maximumDepth)
         {
             if (browser == null)
@@ -44,7 +58,15 @@ namespace WebCrawlerDemo
                 if (maximumDepth >= 0 && currentDepth > maximumDepth)
                     continue;
 
+                // Vérifier la limite de pages par domaine
+                if (!CanCrawlDomain(currentUrl))
+                {
+                    Console.WriteLine($"Limite de pages atteinte pour le domaine de {currentUrl}");
+                    continue;
+                }
+
                 visitedUrls.Add(currentUrl);
+                IncrementDomainCounter(currentUrl);
 
                 try
                 {
@@ -294,6 +316,66 @@ namespace WebCrawlerDemo
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Vérifie si on peut encore crawler ce domaine selon la politique MaxPagesPerDomain
+        /// </summary>
+        private bool CanCrawlDomain(string url)
+        {
+            // Si pas de limite, autoriser
+            if (_policies.MaxPagesPerDomain < 0)
+                return true;
+
+            string domain = ExtractDomain(url);
+            if (string.IsNullOrEmpty(domain))
+                return true;
+
+            if (_pagesPerDomain.TryGetValue(domain, out int count))
+            {
+                return count < _policies.MaxPagesPerDomain;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Incrémente le compteur de pages visitées pour ce domaine
+        /// </summary>
+        private void IncrementDomainCounter(string url)
+        {
+            string domain = ExtractDomain(url);
+            if (string.IsNullOrEmpty(domain))
+                return;
+
+            if (_pagesPerDomain.ContainsKey(domain))
+            {
+                _pagesPerDomain[domain]++;
+            }
+            else
+            {
+                _pagesPerDomain[domain] = 1;
+            }
+        }
+
+        /// <summary>
+        /// Extrait le domaine d'une URL
+        /// </summary>
+        private string ExtractDomain(string url)
+        {
+            try
+            {
+                if (Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+                {
+                    return uri.Host.ToLowerInvariant();
+                }
+            }
+            catch
+            {
+                // Ignorer les erreurs
+            }
+
+            return string.Empty;
         }
     }
 }

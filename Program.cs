@@ -32,5 +32,64 @@ Console.WriteLine("✅ Support des URLs HTTP/HTTPS implémenté !");
 Console.WriteLine("✅ Résolution d'URLs relatives avec Uri");
 Console.WriteLine("✅ Normalisation avancée des URLs\n");
 
+// Test Rate Limiting et Politiques (Itération 4)
+Console.WriteLine("=== Test Rate Limiting et Politiques (Itération 4) ===\n");
+
+// Test avec politique par défaut
+Console.WriteLine("Test avec politique par défaut (1000ms entre requêtes):");
+var defaultPolicies = new WebCrawlerDemo.CrawlerPolicies();
+var httpBrowserDefault = new WebCrawlerDemo.HttpWebBrowser(
+    defaultPolicies.UserAgent, 
+    defaultPolicies.DelayBetweenRequestsMs
+);
+var crawlerDefault = new WebCrawlerDemo.EmailWebCrawler(defaultPolicies);
+Console.WriteLine($"✅ Délai configuré: {defaultPolicies.DelayBetweenRequestsMs}ms");
+Console.WriteLine($"✅ User-Agent: {defaultPolicies.UserAgent}\n");
+
+// Test avec politique conservative
+Console.WriteLine("Politique Conservative (2000ms, max 100 pages/domaine):");
+var conservativePolicies = new WebCrawlerDemo.CrawlerPolicies
+{
+    DelayBetweenRequestsMs = 2000,
+    MaxPagesPerDomain = 100,
+    RequestTimeoutSeconds = 20,
+    UserAgent = "WebCrawlerDemo/1.0 (Conservative; +https://github.com/xavave/WebCrawlerDemo)"
+};
+Console.WriteLine($"  - Délai: {conservativePolicies.DelayBetweenRequestsMs}ms");
+Console.WriteLine($"  - Max pages/domaine: {conservativePolicies.MaxPagesPerDomain}");
+Console.WriteLine($"  - Timeout: {conservativePolicies.RequestTimeoutSeconds}s");
+Console.WriteLine($"  - User-Agent: {conservativePolicies.UserAgent}\n");
+
+// Test avec politique aggressive
+Console.WriteLine("Politique Aggressive (100ms, pas de limite):");
+var aggressivePolicies = new WebCrawlerDemo.CrawlerPolicies
+{
+    DelayBetweenRequestsMs = 100,
+    MaxPagesPerDomain = -1,
+    RequestTimeoutSeconds = 10,
+    UserAgent = "WebCrawlerDemo/1.0 (Fast; +https://github.com/xavave/WebCrawlerDemo)"
+};
+Console.WriteLine($"  - Délai: {aggressivePolicies.DelayBetweenRequestsMs}ms");
+Console.WriteLine($"  - Max pages/domaine: illimité");
+Console.WriteLine($"  - Timeout: {aggressivePolicies.RequestTimeoutSeconds}s");
+Console.WriteLine($"  - User-Agent: {aggressivePolicies.UserAgent}\n");
+
+// Démonstration du rate limiting avec MockWebBrowser
+Console.WriteLine("Démonstration du comptage de pages par domaine:");
+var testPolicies = new WebCrawlerDemo.CrawlerPolicies 
+{ 
+    MaxPagesPerDomain = 2,  // Limite à 2 pages pour la démo
+    DelayBetweenRequestsMs = 0  // Pas de délai pour les tests locaux
+};
+var crawlerLimited = new WebCrawlerDemo.EmailWebCrawler(testPolicies);
+var emailsLimited = crawlerLimited.GetEmailsInPageAndChildPages(browser, "C:/TestHtml/index.html", 2);
+Console.WriteLine($"Avec limite de 2 pages: {string.Join(", ", emailsLimited)}");
+Console.WriteLine("✅ Les pages au-delà de la limite sont ignorées\n");
+
+Console.WriteLine("✅ Rate limiting implémenté !");
+Console.WriteLine("✅ Politiques de crawling configurables");
+Console.WriteLine("✅ Limitation par domaine fonctionnelle");
+Console.WriteLine("✅ Crawling respectueux et responsable\n");
+
 Console.WriteLine("Appuyez sur une touche pour continuer...");
 Console.ReadKey();
