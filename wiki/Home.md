@@ -6,8 +6,7 @@ Bienvenue sur le wiki du projet **WebCrawlerDemo** ! Ce wiki documente l'évolut
 
 - **[Iterations](Iterations)** - Détails de chaque itération du projet
 - **[IA comme Accélérateur pour Développeurs Seniors](IA-Accelerateur-Developpeurs-Seniors)** - Réflexion sur l'utilisation de l'IA dans le développement
-- **[Architecture](Architecture)** - Architecture et design patterns utilisés
-- **[API Reference](API-Reference)** - Documentation de l'API
+- **[Développeur Senior IA-Augmenté Pour Serensia](Developpeur-Senior-IA-Augmente-Pour-Serensia)** - Proposition de valeur Serensia
 
 ## 🎯 Objectif du Projet
 
