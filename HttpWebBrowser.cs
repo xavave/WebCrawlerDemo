@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace WebCrawlerDemo
 {
@@ -30,6 +31,8 @@ namespace WebCrawlerDemo
             _delayBetweenRequestsMs = Math.Max(0, delayBetweenRequestsMs);
             _lastRequestPerDomain = new Dictionary<string, DateTime>();
             
+            Log.Debug("HttpWebBrowser créé - UserAgent: {UserAgent}, Délai: {Delay}ms", userAgent, delayBetweenRequestsMs);
+            
             // Configuration HttpClient avec redirections automatiques
             var handler = new HttpClientHandler
             {
@@ -49,15 +52,24 @@ namespace WebCrawlerDemo
         {
             try
             {
+                Log.Debug("Récupération de la page - URL: {Url}", url);
+                
                 // Appliquer le rate limiting avant la requête
                 ApplyRateLimiting(url);
                 
                 // Convertir l'appel asynchrone en synchrone pour l'interface existante
-                return GetHtmlAsync(url).GetAwaiter().GetResult();
+                var html = GetHtmlAsync(url).GetAwaiter().GetResult();
+                
+                if (!string.IsNullOrEmpty(html))
+                {
+                    Log.Debug("Page récupérée avec succès - URL: {Url}, Taille: {Size} caractères", url, html.Length);
+                }
+                
+                return html;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur lors de la récupération de {url}: {ex.Message}");
+                Log.Error(ex, "Erreur lors de la récupération de l'URL: {Url}", url);
                 return null;
             }
         }
@@ -89,7 +101,7 @@ namespace WebCrawlerDemo
                         if (remainingDelay > 0)
                         {
                             // Attendre le délai restant
-                            Console.WriteLine($"Rate limiting: attente de {remainingDelay}ms pour {domain}");
+                            Log.Debug("Rate limiting - Domaine: {Domain}, Attente: {Delay}ms", domain, remainingDelay);
                             Thread.Sleep(remainingDelay);
                         }
                     }

@@ -1,8 +1,16 @@
-﻿// Test de l'algorithme de web crawler d'emails
+﻿using Serilog;
+using Serilog.Events;
+
+// Configuration du logging (Itération 7)
+WebCrawlerDemo.LoggingConfiguration.ConfigureLogging(LogEventLevel.Debug);
+
+Log.Information("=== Démarrage de WebCrawlerDemo ===");
+
+// Test de l'algorithme de web crawler d'emails
 var browser = new WebCrawlerDemo.MockWebBrowser();
 var webCrawler = new WebCrawlerDemo.EmailWebCrawler();
 
-Console.WriteLine("=== Test du Web Crawler d'Emails ===\n");
+Console.WriteLine("\n=== Test du Web Crawler d'Emails ===\n");
 
 // Test avec profondeur 0
 Console.WriteLine("Profondeur 0:");
@@ -143,6 +151,17 @@ Console.WriteLine("✅ Support des directives Allow/Disallow");
 Console.WriteLine("✅ Support Crawl-delay et Sitemap");
 Console.WriteLine("✅ Cache robots.txt par domaine");
 Console.WriteLine("✅ Crawling éthique et conforme aux standards\n");
+
+// Itération 7: Logging structuré
+Console.WriteLine("=== Itération 7: Structured Logging ===\n");
+Console.WriteLine("✅ Serilog configuré avec Console et File sinks");
+Console.WriteLine("✅ Logging structuré dans toutes les classes");
+Console.WriteLine("✅ Niveaux: Debug, Information, Warning, Error");
+Console.WriteLine("✅ Fichiers de log: logs/webcrawler-YYYY-MM-DD.log");
+Console.WriteLine("✅ Rétention: 7 jours\n");
+
+Log.Information("=== Fin de WebCrawlerDemo ===");
+WebCrawlerDemo.LoggingConfiguration.CloseAndFlush();
 
 Console.WriteLine("Appuyez sur une touche pour continuer...");
 Console.ReadKey();

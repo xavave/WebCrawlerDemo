@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
+using Serilog;
 
 namespace WebCrawlerDemo
 {
@@ -29,6 +30,12 @@ namespace WebCrawlerDemo
         {
             _policies = policies ?? CrawlerPolicies.Default;
             _pagesPerDomain = new Dictionary<string, int>();
+            Log.Debug("EmailWebCrawler créé avec politique: {@Policies}", new 
+            { 
+                _policies.DelayBetweenRequestsMs, 
+                _policies.MaxPagesPerDomain, 
+                _policies.RespectRobotsTxt 
+            });
         }
 
         public List<string> GetEmailsInPageAndChildPages(IWebBrowser browser, string url, int maximumDepth)
@@ -39,6 +46,8 @@ namespace WebCrawlerDemo
             if (string.IsNullOrEmpty(url))
                 throw new ArgumentException("L'URL ne peut pas être vide", nameof(url));
 
+            Log.Information("Début du crawling - URL: {Url}, Profondeur max: {MaxDepth}", url, maximumDepth);
+
             var distinctEmails = new HashSet<string>();
             var visitedUrls = new HashSet<string>();
             var urlsToVisit = new Queue<(string Url, int Depth)>();
@@ -47,11 +56,13 @@ namespace WebCrawlerDemo
             if (_policies.RespectRobotsTxt)
             {
                 _robotsCache = new RobotsTxtCache(browser);
+                Log.Debug("Cache robots.txt initialisé");
             }
 
             // Normaliser l'URL de départ
             string normalizedStartUrl = NormalizeUrl(url);
             urlsToVisit.Enqueue((normalizedStartUrl, 0));
+            Log.Debug("URL normalisée: {OriginalUrl} -> {NormalizedUrl}", url, normalizedStartUrl);
 
             // Algorithme BFS pour explorer les pages niveau par niveau
             while (urlsToVisit.Count > 0)
@@ -69,7 +80,8 @@ namespace WebCrawlerDemo
                 // Vérifier la limite de pages par domaine
                 if (!CanCrawlDomain(currentUrl))
                 {
-                    Console.WriteLine($"Limite de pages atteinte pour le domaine de {currentUrl}");
+                    Log.Warning("Limite de pages atteinte pour le domaine - URL: {Url}, Domaine: {Domain}", 
+                        currentUrl, ExtractDomain(currentUrl));
                     continue;
                 }
 
@@ -78,20 +90,25 @@ namespace WebCrawlerDemo
                 {
                     if (!_robotsCache.IsAllowed(currentUrl, _policies.UserAgent))
                     {
-                        Console.WriteLine($"URL bloquée par robots.txt: {currentUrl}");
+                        Log.Information("URL bloquée par robots.txt - URL: {Url}, UserAgent: {UserAgent}", 
+                            currentUrl, _policies.UserAgent);
                         continue;
                     }
                 }
 
                 visitedUrls.Add(currentUrl);
                 IncrementDomainCounter(currentUrl);
+                Log.Debug("Visite de la page - URL: {Url}, Profondeur: {Depth}", currentUrl, currentDepth);
 
                 try
                 {
                     // Récupérer le HTML de la page
                     string html = browser.GetHtml(currentUrl);
                     if (string.IsNullOrEmpty(html))
+                    {
+                        Log.Warning("HTML vide retourné pour l'URL: {Url}", currentUrl);
                         continue;
+                    }
 
                     // Parser le HTML réel avec HtmlAgilityPack (supporte HTML malformé)
                     var htmlDoc = new HtmlDocument();
@@ -99,6 +116,11 @@ namespace WebCrawlerDemo
 
                     // Extraire tous les emails de la page actuelle
                     var emailsInPage = ExtractEmailsFromHtml(htmlDoc);
+                    if (emailsInPage.Count > 0)
+                    {
+                        Log.Debug("Emails trouvés - URL: {Url}, Nombre: {Count}, Emails: {@Emails}", 
+                            currentUrl, emailsInPage.Count, emailsInPage);
+                    }
                     foreach (var email in emailsInPage)
                     {
                         distinctEmails.Add(email);
@@ -108,6 +130,7 @@ namespace WebCrawlerDemo
                     if (maximumDepth == -1 || currentDepth < maximumDepth)
                     {
                         var childUrls = ExtractChildUrls(htmlDoc, currentUrl);
+                        Log.Debug("Liens enfants trouvés - URL: {Url}, Nombre: {Count}", currentUrl, childUrls.Count);
                         foreach (var childUrl in childUrls)
                         {
                             string normalizedChildUrl = NormalizeUrl(childUrl);
@@ -121,10 +144,12 @@ namespace WebCrawlerDemo
                 catch (Exception ex)
                 {
                     // Log l'erreur mais continue le traitement des autres URLs
-                    Console.WriteLine($"Erreur lors du traitement de {currentUrl}: {ex.Message}");
+                    Log.Error(ex, "Erreur lors du traitement de l'URL: {Url}", currentUrl);
                 }
             }
 
+            Log.Information("Crawling terminé - Emails trouvés: {Count}, Pages visitées: {PagesCount}", 
+                distinctEmails.Count, visitedUrls.Count);
             return distinctEmails.ToList();
         }
 

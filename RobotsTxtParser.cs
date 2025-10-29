@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Serilog;
 
 namespace WebCrawlerDemo
 {
@@ -27,7 +28,12 @@ namespace WebCrawlerDemo
         public void Parse(string robotsTxtContent)
         {
             if (string.IsNullOrWhiteSpace(robotsTxtContent))
+            {
+                Log.Debug("Contenu robots.txt vide");
                 return;
+            }
+
+            Log.Debug("Parsing robots.txt - Taille: {Size} caractères", robotsTxtContent.Length);
 
             var lines = robotsTxtContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             string currentUserAgent = "*";

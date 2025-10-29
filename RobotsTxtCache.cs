@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Serilog;
 
 namespace WebCrawlerDemo
 {
     /// <summary>
     /// Cache pour les fichiers robots.txt par domaine
-    /// Itération 5: Support de robots.txt
+    /// Itï¿½ration 5: Support de robots.txt
     /// </summary>
     public class RobotsTxtCache
     {
@@ -19,10 +20,11 @@ namespace WebCrawlerDemo
             _browser = browser ?? throw new ArgumentNullException(nameof(browser));
             _cache = new Dictionary<string, CachedRobotsTxt>();
             _cacheDuration = cacheDuration ?? TimeSpan.FromHours(24);
+            Log.Debug("RobotsTxtCache crÃ©Ã© - DurÃ©e du cache: {Duration}", _cacheDuration);
         }
 
         /// <summary>
-        /// Récupère le parser robots.txt pour un domaine donné
+        /// Rï¿½cupï¿½re le parser robots.txt pour un domaine donnï¿½
         /// </summary>
         public RobotsTxtParser GetRobotsTxt(string url)
         {
@@ -37,17 +39,17 @@ namespace WebCrawlerDemo
 
                 lock (_lockObject)
                 {
-                    // Vérifier si on a déjà le robots.txt en cache
+                    // Vï¿½rifier si on a dï¿½jï¿½ le robots.txt en cache
                     if (_cache.TryGetValue(domain, out var cached))
                     {
-                        // Vérifier si le cache est encore valide
+                        // Vï¿½rifier si le cache est encore valide
                         if (DateTime.UtcNow - cached.Timestamp < _cacheDuration)
                         {
                             return cached.Parser;
                         }
                     }
 
-                    // Télécharger le robots.txt
+                    // Tï¿½lï¿½charger le robots.txt
                     var parser = new RobotsTxtParser();
                     try
                     {
@@ -59,8 +61,8 @@ namespace WebCrawlerDemo
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Impossible de récupérer robots.txt pour {domain}: {ex.Message}");
-                        // En cas d erreur, on crée un parser vide (tout autorisé)
+                        Console.WriteLine($"Impossible de rï¿½cupï¿½rer robots.txt pour {domain}: {ex.Message}");
+                        // En cas d erreur, on crï¿½e un parser vide (tout autorisï¿½)
                     }
 
                     // Mettre en cache
@@ -75,13 +77,13 @@ namespace WebCrawlerDemo
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur lors de la récupération du robots.txt pour {url}: {ex.Message}");
+                Console.WriteLine($"Erreur lors de la rï¿½cupï¿½ration du robots.txt pour {url}: {ex.Message}");
                 return new RobotsTxtParser();
             }
         }
 
         /// <summary>
-        /// Vérifie si une URL peut être crawlée selon robots.txt
+        /// Vï¿½rifie si une URL peut ï¿½tre crawlï¿½e selon robots.txt
         /// </summary>
         public bool IsAllowed(string url, string userAgent = "*")
         {
@@ -92,13 +94,13 @@ namespace WebCrawlerDemo
             }
             catch
             {
-                // En cas d erreur, autoriser par défaut
+                // En cas d erreur, autoriser par dï¿½faut
                 return true;
             }
         }
 
         /// <summary>
-        /// Nettoie les entrées expirées du cache
+        /// Nettoie les entrï¿½es expirï¿½es du cache
         /// </summary>
         public void CleanExpiredEntries()
         {
