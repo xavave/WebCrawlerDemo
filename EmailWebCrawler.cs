@@ -11,6 +11,7 @@ namespace WebCrawlerDemo
     /// Implémentation du web crawler d'emails utilisant l'algorithme BFS (Breadth-First Search)
     /// pour respecter la contrainte de priorité aux pages "les plus proches".
     /// Version 2: Utilise HtmlAgilityPack pour parser du HTML réel (pas uniquement XML valide)
+    /// Version 3: Support des URLs HTTP/HTTPS absolues et domaines multiples
     /// </summary>
     public class EmailWebCrawler : ITheTest
     {
@@ -153,10 +154,15 @@ namespace WebCrawlerDemo
                 if (string.IsNullOrEmpty(href))
                     continue;
 
-                // Ignorer les liens mailto et les liens HTTP/HTTPS (pour l'instant)
-                if (href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) ||
-                    href.StartsWith("http:", StringComparison.OrdinalIgnoreCase) ||
-                    href.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+                // Ignorer les liens mailto
+                if (href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                
+                // Ignorer les liens javascript et autres protocoles non-http
+                if (href.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase) ||
+                    href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase) ||
+                    href.StartsWith("ftp:", StringComparison.OrdinalIgnoreCase) ||
+                    href.StartsWith("#"))
                     continue;
 
                 string? absoluteUrl = ResolveRelativeUrl(baseUrl, href);
@@ -171,37 +177,103 @@ namespace WebCrawlerDemo
 
         /// <summary>
         /// Résout une URL relative par rapport à une URL de base
+        /// Version 3: Utilise Uri pour supporter les URLs HTTP/HTTPS et chemins locaux
         /// </summary>
         private string? ResolveRelativeUrl(string baseUrl, string relativeUrl)
         {
             try
             {
-                // Si l'URL relative commence par "./" on l'enlève
+                // Nettoyer l'URL relative
+                relativeUrl = relativeUrl.Trim();
+                
+                if (string.IsNullOrEmpty(relativeUrl))
+                    return null;
+
+                // Si l'URL est déjà absolue, la retourner telle quelle
+                if (Uri.IsWellFormedUriString(relativeUrl, UriKind.Absolute))
+                {
+                    return relativeUrl;
+                }
+
+                // Vérifier si baseUrl est une URL HTTP/HTTPS
+                if (Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? baseUri))
+                {
+                    // Si c'est une URL HTTP/HTTPS, utiliser Uri pour la résolution
+                    if (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps)
+                    {
+                        if (Uri.TryCreate(baseUri, relativeUrl, out Uri? absoluteUri))
+                        {
+                            return absoluteUri.ToString();
+                        }
+                    }
+                }
+
+                // Sinon, c'est un chemin local (compatibilité avec les tests existants)
                 if (relativeUrl.StartsWith("./"))
                 {
                     relativeUrl = relativeUrl.Substring(2);
                 }
 
-                // Obtenir le répertoire de base
-                string baseDirectory = Path.GetDirectoryName(baseUrl);
-                return Path.Combine(baseDirectory, relativeUrl).Replace('\\', '/');
+                string? baseDirectory = Path.GetDirectoryName(baseUrl);
+                if (baseDirectory != null)
+                {
+                    return Path.Combine(baseDirectory, relativeUrl).Replace('\\', '/');
+                }
+
+                return null;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Erreur lors de la résolution de l'URL {relativeUrl} depuis {baseUrl}: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
         /// Normalise une URL pour éviter les doublons
+        /// Version 3: Support des URLs HTTP/HTTPS avec normalisation avancée
         /// </summary>
         private string NormalizeUrl(string url)
         {
             if (string.IsNullOrEmpty(url))
                 return url;
 
-            // Normaliser les séparateurs de chemin
-            return url.Replace('\\', '/');
+            try
+            {
+                // Pour les URLs HTTP/HTTPS, utiliser Uri pour normaliser
+                if (Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+                {
+                    if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+                    {
+                        // Normaliser l'URL HTTP
+                        var builder = new UriBuilder(uri);
+                        
+                        // Enlever le fragment (#section)
+                        builder.Fragment = string.Empty;
+                        
+                        // Normaliser le port par défaut
+                        if ((builder.Scheme == Uri.UriSchemeHttp && builder.Port == 80) ||
+                            (builder.Scheme == Uri.UriSchemeHttps && builder.Port == 443))
+                        {
+                            builder.Port = -1; // Utiliser le port par défaut
+                        }
+                        
+                        // Convertir en minuscules le schéma et le host
+                        builder.Scheme = builder.Scheme.ToLowerInvariant();
+                        builder.Host = builder.Host.ToLowerInvariant();
+                        
+                        return builder.Uri.ToString();
+                    }
+                }
+
+                // Pour les chemins locaux, normaliser les séparateurs
+                return url.Replace('\\', '/');
+            }
+            catch
+            {
+                // En cas d'erreur, retourner l'URL originale normalisée simplement
+                return url.Replace('\\', '/');
+            }
         }
 
         /// <summary>
